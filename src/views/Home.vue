@@ -64,9 +64,9 @@
           </el-breadcrumb>
           <div class="ml-10">
             <el-input suffix-icon="el-icon-user-solid" v-model="inputName" style="width:180px;margin-right: 10px" type="text" size="medium"  placeholder="请输入姓名" ></el-input>
-            <el-input suffix-icon="el-icon-document" v-model="inputDingDan" style="width:180px;margin-right: 10px" type="text" size="medium"  placeholder="请输入订单编号" ></el-input>
-            <el-input suffix-icon="el-icon-s-home" v-model="inputFirm" style="width:180px;margin-right: 10px" type="text" size="medium"  placeholder="请输入公司名称" ></el-input>
-            <el-button type="primary" style="margin: 10px 5px" icon="el-icon-search" size="medium">搜索</el-button>
+            <el-input suffix-icon="el-icon-phone" v-model="inputTelPhone" style="width:180px;margin-right: 10px" type="text" size="medium"  placeholder="请输入电话号" ></el-input>
+            <el-input suffix-icon="el-icon-s-home" v-model="inputAddress" style="width:180px;margin-right: 10px" type="text" size="medium"  placeholder="请输入地址" ></el-input>
+            <el-button type="primary" style="margin: 10px 5px" icon="el-icon-search" size="medium" @click="selectByCondition()">搜索&nbsp;&nbsp;&nbsp;(支持模糊查询）</el-button>
           </div>
           <div class="ml-10">
             <el-row>
@@ -78,17 +78,26 @@
               <el-button type="primary" size="medium" style="width: 90px">导出<i class="el-icon-upload el-icon--right"></i></el-button>
             </el-row>
           </div>
-          <el-table :data="tableData" border style="text-align: center">
+          <el-table :data="dataTable" border style="text-align: center">
             <el-table-column
                 type="selection"
                 width="55">
             </el-table-column>
-            <el-table-column prop="date" label="日期" width="140">
+            <el-table-column prop="id" label="ID" width="60">
+            </el-table-column>
+            <el-table-column prop="createTime" label="日期" width="140">
             </el-table-column>
             <el-table-column prop="name" label="姓名" width="120">
             </el-table-column>
+            <el-table-column prop="nickName" label="昵称">
+            </el-table-column>
+            <el-table-column prop="telPhone" label="电话">
+            </el-table-column>
             <el-table-column prop="address" label="地址">
             </el-table-column>
+            <el-table-column prop="email" label="邮箱">
+            </el-table-column>
+          ble-column>
             <el-table-column  label="编辑" width="300" fixed="right">
               <template slot-scope="scope">
                 <el-button type="primary" size="small" @click="handleClick(scope.row)" >编辑<i class="el-icon-edit el-icon--right"></i></el-button>
@@ -100,11 +109,11 @@
             <el-pagination
                 @size-change="handleSizeChange"
                 @current-change="handleCurrentChange"
-                :current-page="currentPage4"
-                :page-sizes="[100, 200, 300, 400]"
-                :page-size="100"
+                :current-page=pageNum
+                :page-sizes="[3, 5, 10, 15]"
+                :page-size=pageSize
                 layout="total, sizes, prev, pager, next, jumper"
-                :total="400">
+                :total="total">
             </el-pagination>
           </div>
         </el-main>
@@ -116,11 +125,23 @@
 export default {
   name:'home',
   methods: {
-    handleSizeChange(val) {
-      console.log(`每页 ${val} 条`);
+    selectByCondition(){
+      fetch("http://localhost:9090/user/selectByCondition?name="+this.inputName+"&telPhone="+this.inputTelPhone+"&address="+this.inputAddress).then(res=>res.json()).then(res=>{
+        this.dataTable=res;
+        this.inputAddress="";
+        this.inputTelPhone="";
+        this.inputName=""
+        this.total=res.length;
+
+      });
     },
-    handleCurrentChange(val) {
-      console.log(`当前页: ${val}`);
+    hadleSizeChange(pageSize) {
+      this.pageSize=pageSize;
+      this.load();
+    },
+    handleCurrentChange(pageNum) {
+      this.pageNum=pageNum;
+      this.load();
     },
     collapse(){
       this.isCollapse=!this.isCollapse
@@ -133,24 +154,31 @@ export default {
         this.dtwidth=200;
         this.wzht=true;
       }
+    },
+    load(){
+      //活动的数据   "http://localhost:9090/user/selectPage?pageNum=2&pageSize=4"
+      // "http://localhost:9090/user/selectPage?pageNum="+this.pageNum+"&pageSize="+this.pageSize
+      fetch("http://localhost:9090/user/selectPage?pageNum="+this.pageNum+"&pageSize="+this.pageSize).then(res=>res.json()).then(res=>{
+        this.dataTable=res.data;
+        this.total=res.total;
+      });
     }
 
   },
+  created(){
+    this.load()
+  },
   data(){
-    const item = {
-      date: '2016-05-02',
-      name: '谢中原',
-      address: '奥奇丽工业园区27号楼'
-    };
     return {
-      currentPage1: 5,
-      currentPage2: 5,
-      currentPage3: 5,
-      currentPage4: 4,
+      //数字可以不添加“”,直接使用数字就可以了
+      pageNum:1,
+      pageSize:3,
+      total:'',
+      dataTable:[],
       inputName:'',
-      inputDingDan:'',
+      inputTelPhone:'',
+      inputAddress:'',
       inputFirm:'',
-      tableData: Array(9).fill(item),
       isCollapse:false,
       dtwidth:200,
       btnClass:'el-icon-s-fold',
@@ -159,6 +187,8 @@ export default {
   }
 }
 </script>
+
+
 
 <style>
 .el-header {
